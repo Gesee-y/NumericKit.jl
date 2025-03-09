@@ -1,0 +1,6 @@
+name = "NumericKit"
+uuid = "d855907b-85bf-40b2-8b45-fabe493c1faa"
+authors = ["Kaptue Talom Lael <gesee37@gmail.com>"]
+version = "0.1.0"
+
+[deps]
