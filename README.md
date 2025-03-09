@@ -19,4 +19,10 @@ NumericKit.jl is just a set of tool to address that large domain.
 
 ```
 
-## Contribution 
+## Contribution
+
+I would greatly appreciate your contribution to the package.
+To do so, just :
+   1. Fork the repository
+   2. Create a new branch
+   3. Submit a Pull Request
