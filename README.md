@@ -1,4 +1,21 @@
+---
+Title: Notifyers.jl
+
+Author: Talom Laël
+
+Contact : gesee37@gmail.com
+
+...
+
 # NumericKit.jl
+
+## Quick start
+
+```julia
+import Pkg
+Pkg.add("https://github.com/Gesee-y/NumericKit.jl.git")
+using NumericKit
+```
 
 Packages for some operations on numerical functions
 
