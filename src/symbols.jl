@@ -180,6 +180,18 @@ derivate(n::PowNode) = ProdNode(ProdNode(n[2], n[1]), derivate(n[1]))
 ## Others 
 derivate(ex::Expr) = derivative(ex)
 derivate(s::Symbol) = 1
+derivate(tree::NSyntaxTree) = NSyntaxTree(derivate(tree.root))
+
+getop(::AddNode) = :+
+getop(::SubNode) = :-
+getop(::ProdNode) = :*
+getop(::PowNode) = :^
+
+## To expression
+
+toexpr(n::ConstNode) = n[1]
+toexpr(n::SymbNode) = n[1]
+toexpr(n::NSyntaxNode) = Expr(:call, getop(n), toexpr(n[1]), toexpr(n[2]))
 
 ### Cleaning 
 cderivate(::Val{:+}, f, g) = Expr(:call, :+, f, g)
