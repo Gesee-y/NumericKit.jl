@@ -75,6 +75,9 @@ struct ProdNode{T <: NodeType, N <: NodeType}
 
         (iszero(n1) || iszero(n2)) && return ConstNode{Int}(0)
 
+        (isone(n1)) && return n2
+        (isone(n2)) && return n1
+
         return new{T, N}(n1, n2)
     end
 end
@@ -115,6 +118,7 @@ negate(n::NSyntaxNode) = n
 
 derivate(n::Number) = 0
 derivate(n::ConstNode) = 0
+derivate(n::SymbNode) = 1
 
 ## Addition rule
 derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
