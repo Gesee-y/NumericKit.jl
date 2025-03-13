@@ -8,25 +8,33 @@ get_children(n) = ()
 
 is_leave(n) = isempty(get_children(n))
 
+const SymType = Union{Symbol,Expr, Number}
 ### Managing Symbols
-is_leave(n) = isempty(get_children(n))
-
-add_deriv(f,g) = Expr(:call, :+, derivative(f), derivative(g))
 
 derivate(n::Number) = 0
-derivate(::Val{:+}, f, g) = Expr(:call, :+, derivate(f), derivate(g))
-derivate(::Val{:-}, f, g) = Expr(:call, :-, derivate(f), derivate(g))
-derivate(::Val{:*}, f, g) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
-derivate(::Val{:*}, f, n::Number) = Expr(:call, :*, n, derivate(f))
-derivate(::Val{:*}, n::Number, f) = Expr(:call, :*, n, derivate(f))
-derivate(::Val{:^}, f, n::Number) = begin
+derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
+derivate(::Val{:-}, f::SymType,
+, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
+derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
+derivate(::Val{:*}, f::SymType, n::Number) = derivate(Val(:*), f, n)
+derivate(::Val{:*}, n::Number, f::SymType) = begin
+    if n==0
+        return 0
+    elseif n==1
+        return derivate(f)
+    end
+
+    return Expr(:call, :*, n, derivate(f))
+    
+end
+derivate(::Val{:^}, f::SymType, n::Number) = begin
     if iszero(n-1)
         return Expr(:call, :*, n, derivate(f))
     elseif isone(n-1)
         return Expr(:call, :*, n, f, derivate(f))
     end
 
-    return Expr(:call, :*, n, Expr(:call, :^, f, n-1), derivate(f))
+    return Expr(:call, :*, n, Expr(:call, :^, f::SymType, n-1), derivate(f))
 end
 derivate(ex::Expr) = derivative(ex)
 derivate(s::Symbol) = 1
