@@ -17,8 +17,7 @@ derivate(n::Number) = 0
 derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
 
 ## Substraction rule
-derivate(::Val{:-}, f::SymType,
-, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
+derivate(::Val{:-}, f::SymType, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
 
 ## Chain rule
 derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
@@ -31,14 +30,18 @@ derivate(::Val{:*}, n::Number, f::SymType) = begin
         return derivate(f)
     end
     nf = derivate(f)
-    
-    if nf.args[1] == :*
-        nf.args[2] *= n
-        return nf
+
+    if nf isa Expr
+        if nf.args[1] == :*
+            nf.args[2] *= n
+            return nf
+        end
+    else
+        return n*nf
     end
 
     return Expr(:call, :*, n, nf)
-    
+
 end
 
 ## Power rule
@@ -83,25 +86,32 @@ end
 
 function derivative(ex::Expr)
     ch = get_children(ex)
-    
+
     if !is_leave(ch)
         der = derivate(Val(ch[1]), ch[2], ch[3])
 
         return der
     end
-    
+
     return :()
 end
 
-eval_func(ex::Expr,v) = begin
-   for i in eachindex(ex.args)
-       arg = ex.args[i]
-       if arg == :x
-           ex.args[i] = v
-       elseif arg isa Expr
-           eval_func(arg,v)
-       end
-   end
+## Precompiling stuffs
+precompile(derivate, (Val{:+}, Expr, Number))
+precompile(derivate, (Val{:+}, Number, Expr))
+precompile(derivate, (Val{:+}, Expr, Expr))
+precompile(derivate, (Val{:-}, Expr, Number))
+precompile(derivate, (Val{:-}, Number, Expr))
+precompile(derivate, (Val{:-}, Expr, Expr))
+precompile(derivate, (Val{:*}, Expr, Number))
+precompile(derivate, (Val{:*}, Number, Expr))
+precompile(derivate, (Val{:*}, Expr, Expr))
+precompile(derivate, (Val{:^}, Expr, Number))
+precompile(derivate, (Val{:^}, Symbol, Number))
+precompile(derivate, (Val{:^}, Expr, Expr))
 
-   eval(ex)
+
+eval_func(ex::Expr,v::Number) = begin
+    ex = Meta.parse(replace(string(ex), 'x' => "$v"))
+    eval(ex)
 end
