@@ -112,6 +112,11 @@ precompile(derivate, (Val{:^}, Expr, Expr))
 
 
 eval_func(ex::Expr,v::Number) = begin
-    ex = Meta.parse(replace(string(ex), 'x' => "$v"))
-    eval(ex)
+    substitute(ex, :x => v) |> eval
+end
+
+substitute(n::Number, _) = n
+substitute(s::Symbol, sub::Pair{Symbol,<:Number}) = s == sub.first ? sub.second : s
+function substitute(ex::Expr, sub)
+    Expr(ex.head, [substitute(arg, sub) for arg in ex.args]...)
 end
