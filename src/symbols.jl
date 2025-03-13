@@ -2,7 +2,7 @@
 
 #### First, we make a basic tree system 
 
-abstract type NSyntaxNode
+abstract type NSyntaxNode end
 
 const NodeType = Union{Number, NSyntaxNode, Symbol}
 
@@ -24,124 +24,91 @@ end
 struct AddNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
+    AddNode{T, N}(n1::T, n2::N) where {T <: NSyntaxNode, N <: NSyntaxNode} = new(n1, n2)
+end
 
-    ## Constructor
-
-    function AddNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
-        if n1 isa ConstNode && n2 isa ConstNode
-            v = n1[1] + n2[2]
-            return ConstNode{type of(v)}(v)
-        end
-        
-        iszero(n1) && return n2
-        iszero(n2) && return n1
-
-        return new{T, N}(n1, n2)
+function AddNode(n1::NSyntaxNode, n2::NSyntaxNode)
+    if n1 isa ConstNode && n2 isa ConstNode
+        return ConstNode(n1.n + n2.n)
+    elseif iszero(n1)
+        return n2
+    elseif iszero(n2)
+        return n1
+    else
+        return AddNode{typeof(n1), typeof(n2)}(n1, n2)
     end
-
-    AddNode(n1::NSyntaxNode, n2::NSyntaxNode) = AddNode{typeof(n1), typeof(n2)}(n1, n2)
 end
-AddNode(n1::NodeType, n2::NodeType) = begin
-    v1 = _make_node(n1)
-    v2 = _make_node(n2)
-    AddNode{typeof(v1), typeof(v2)}(v1,v2)
-end
-
+AddNode(n1::NodeType, n2::NodeType) = AddNode(_make_node(n1), _make_node(n2))
 
 struct SubNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
+    SubNode{T, N}(n1::T, n2::N) where {T <: NSyntaxNode, N <: NSyntaxNode} = new(n1, n2)
+end
 
-    ## Constructor
-
-    function SubNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
-        if n1 isa ConstNode && n2 isa ConstNode
-            v = n1[1] - n2[2]
-            return ConstNode{type of(v)}(v)
-        end
-
-        iszero(n1) && return negate(n2)
-        iszero(n2) && return n1
-
-        return new{T, N}(n1, n2)
+function SubNode(n1::NSyntaxNode, n2::NSyntaxNode)
+    if n1 isa ConstNode && n2 isa ConstNode
+        return ConstNode(n1.n - n2.n)
+    elseif iszero(n2)
+        return n1
+    else
+        return SubNode{typeof(n1), typeof(n2)}(n1, n2)
     end
-
-    SubNode(n1::NSyntaxNode, n2::NSyntaxNode) = SubNode{typeof(n1), typeof(n2)}(n1, n2)
 end
-SubNode(n1::NodeType, n2::NodeType) = begin
-    v1 = _make_node(n1)
-    v2 = _make_node(n2)
-    SubNode{typeof(v1), typeof(v2)}(v1,v2)
-end
-
+SubNode(n1::NodeType, n2::NodeType) = SubNode(_make_node(n1), _make_node(n2))
 
 struct ProdNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
+    ProdNode{T, N}(n1::T, n2::N) where {T <: NSyntaxNode, N <: NSyntaxNode} = new(n1, n2)
+end
 
-    ## Constructor
-
-    function ProdNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
-        if n1 isa ConstNode && n2 isa ConstNode
-            v = n1[1] * n2[2]
-            return ConstNode{type of(v)}(v)
-        end
-
-        (iszero(n1) || iszero(n2)) && return ConstNode{Int}(0)
-
-        (isone(n1)) && return n2
-        (isone(n2)) && return n1
-
-        return new{T, N}(n1, n2)
+function ProdNode(n1::NSyntaxNode, n2::NSyntaxNode)
+    if n1 isa ConstNode && n2 isa ConstNode
+        return ConstNode(n1.n * n2.n)
+    elseif iszero(n1) || iszero(n2)
+        return ConstNode(0)
+    elseif isone(n1)
+        return n2
+    elseif isone(n2)
+        return n1
+    else
+        return ProdNode{typeof(n1), typeof(n2)}(n1, n2)
     end
-
-    ProdNode(n1::NSyntaxNode, n2::NSyntaxNode) = ProdNode{typeof(n1), typeof(n2)}(n1, n2)
 end
-ProdNode(n1::NodeType, n2::NodeType) = begin
-    v1 = _make_node(n1)
-    v2 = _make_node(n2)
-    ProdNode{typeof(v1), typeof(v2)}(v1,v2)
-end
-)
+ProdNode(n1::NodeType, n2::NodeType) = ProdNode(_make_node(n1), _make_node(n2))
 
 struct PowNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
+    PowNode{T, N}(n1::T, n2::N) where {T <: NSyntaxNode, N <: NSyntaxNode} = new(n1, n2)
+end
 
-    ## Constructor
-
-    function PowNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
-        if n1 isa ConstNode && n2 isa ConstNode
-            v = n1[1] ^ n2[2]
-            return ConstNode{type of(v)}(v)
-        end
-
-        iszero(n1) && return ConstNode{Int}(0)
-        iszero(n2) && return ConstNode{Int}(1)
-
-        return new{T, N}(n1, n2)
+function PowNode(n1::NSyntaxNode, n2::NSyntaxNode)
+    if n1 isa ConstNode && n2 isa ConstNode
+        return ConstNode(n1.n ^ n2.n)
+    elseif iszero(n1)
+        return ConstNode(0)
+    elseif iszero(n2)
+        return ConstNode(1)
+    else
+        return PowNode{typeof(n1), typeof(n2)}(n1, n2)
     end
-
-    PowNode(n1::NSyntaxNode, n2::NSyntaxNode) = PowNode{typeof(n1), typeof(n2)}(n1, n2)
 end
-PowNode(n1::NodeType, n2::NodeType) = begin
-    v1 = _make_node(n1)
-    v2 = _make_node(n2)
-    PowNode{typeof(v1), typeof(v2)}(v1,v2)
-end
+PowNode(n1::NodeType, n2::NodeType) = PowNode(_make_node(n1), _make_node(n2))
 
 ####### Operations 
 
 Base.getindex(n::NSyntaxNode, I::Integer) = begin
-    fields = fieldsname(n)
-    return getfield(n, fields[i])
+    fields = fieldnames(typeof(n))
+    getfield(n, fields[I])
 end
 
 iszero(n::NSyntaxNode) = false
-iszero(n::ConstNode) = iszero(n[1])
+iszero(n::ConstNode) = iszero(n.n)
 
 isone(n::NSyntaxNode) = false
-isone(n::ConstNode) = isone(n[1])
+isone(n::ConstNode) = isone(n.n)
 
 get_children(A::AbstractArray) = A
 get_children(e::Expr) = e.args
@@ -150,7 +117,6 @@ get_children(n) = ()
 is_leave(n) = isempty(get_children(n))
 
 const SymType = Union{Symbol,Expr, Number}
-### Managing Symbols
 
 negate(n::NSyntaxNode) = n
 
@@ -158,53 +124,18 @@ derivate(n::Number) = 0
 derivate(n::ConstNode) = 0
 derivate(n::SymbNode) = 1
 
-## Addition rule
-derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
-derivate(n::AddNode) = AddNode(derivate(n[1]), derivate(n[2]))
+derivate(n::AddNode) = AddNode(derivate(n.n1), derivate(n.n2))
+derivate(n::SubNode) = SubNode(derivate(n.n1), derivate(n.n2))
+derivate(n::ProdNode) = AddNode(ProdNode(derivate(n.n1), n.n2), ProdNode(n.n1, derivate(n.n2)))
+derivate(n::PowNode) = ProdNode(ProdNode(n.n2, PowNode(n.n1, SubNode(n.n2, ConstNode(1))), derivate(n.n1))
 
-## Substraction rule
+derivate(::Val{:+}, f::SymType, g::SymType) = Expr(:call, :+, derivate(f), derivate(g))
 derivate(::Val{:-}, f::SymType, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
-derivate(n::SubNode) = SubNode(derivate(n[1]), derivate(n[2]))
+derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*, derivate(f), g), Expr(:call, :*, derivate(g), f))
+derivate(::Val{:*}, f::SymType, n::Number) = derivate(Val(:*), n, f)
+derivate(::Val{:*}, n::Number, f::SymType) = n == 0 ? 0 : (n == 1 ? derivate(f) : Expr(:call, :*, n, derivate(f)))
+derivate(::Val{:^}, f::SymType, n::Number) = n == 1 ? derivate(f) : Expr(:call, :*, n, Expr(:call, :^, f, n - 1), derivate(f))
 
-## Chain rule
-derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
-derivate(::Val{:*}, f::SymType, n::Number) = derivate(Val(:*), f, n)
-derivate(::Val{:*}, n1::Number, n2:: Number) = 0
-derivate(::Val{:*}, n::Number, f::SymType) = begin
-    if n==0
-        return 0
-    elseif n==1
-        return derivate(f)
-    end
-    nf = derivate(f)
-
-    if nf isa Expr
-        if nf.args[1] == :*
-            nf.args[2] *= n
-            return nf
-        end
-    else
-        return n*nf
-    end
-
-    return Expr(:call, :*, n, nf)
-
-end
-derivate(n::ProdNode) = AddNode(ProdNode(derivate(n[1]), n[2]), ProdNode(n[1], derivate(n[2]))
-
-## Power rule
-derivate(::Val{:^}, f::SymType, n::Number) = begin
-    if iszero(n-1)
-        return Expr(:call, :*, n, derivate(f))
-    elseif isone(n-1)
-        return Expr(:call, :*, n, f, derivate(f))
-    end
-
-    return Expr(:call, :*, n, Expr(:call, :^, f::SymType, n-1), derivate(f))
-end
-derivate(n::PowNode) = ProdNode(ProdNode(n[2], n[1]), derivate(n[1]))
-
-## Others 
 derivate(ex::Expr) = derivative(ex)
 derivate(s::Symbol) = 1
 derivate(tree::NSyntaxTree) = NSyntaxTree(derivate(tree.root))
@@ -214,11 +145,9 @@ getop(::SubNode) = :-
 getop(::ProdNode) = :*
 getop(::PowNode) = :^
 
-## To expression
-
-toexpr(n::ConstNode) = n[1]
-toexpr(n::SymbNode) = n[1]
-toexpr(n::NSyntaxNode) = Expr(:call, getop(n), toexpr(n[1]), toexpr(n[2]))
+toexpr(n::ConstNode) = n.n
+toexpr(n::SymbNode) = n.n
+toexpr(n::NSyntaxNode) = Expr(:call, getop(n), toexpr(n.n1), toexpr(n.n2))
 
 totree(ex::Expr) = NSyntaxTree(_make_node(ex))
 
@@ -230,51 +159,50 @@ _make_node(::Val{:*}, n1::NodeType, n2::NodeType) = ProdNode(n1, n2)
 _make_node(::Val{:^}, n1::NodeType, n2::NodeType) = PowNode(n1, n2)
 _make_node(ex::Expr) = begin
     ch = ex.args
-    
-    if length(ex) == 2
+    if length(ch) == 2
         _make_node(Val(ch[1]), ch[2])
-    elseif length(ex) == 3
+    elseif length(ch) == 3
         _make_node(Val(ch[1]), ch[2], ch[3])
     end
 end
-### Cleaning 
-cderivate(::Val{:+}, f, g) = Expr(:call, :+, f, g)
-cderivate(::Val{:+}, f, n::Number) = iszero(n) ? f : Expr(:call, :+, f, n)
-cderivate(::Val{:+}, n::Number, f) = cderivate(Val(:+),f,n)
-cderivate(::Val{:+}, n1::Number, n2::Number) = n1 + n2
-
-cderivate(::Val{:-}, f, g) = Expr(:call, :-, f, g)
-cderivate(::Val{:-}, f, n::Number) = iszero(n) ? f : Expr(:call, :-, f, n)
-cderivate(::Val{:-}, n::Number, f) = iszero(n) ? Expr(:call, :-, f) : Expr(:call, :-, f, n)
-cderivate(::Val{:-}, n1::Number, n2::Number) = n1 - n2
-
-cderivate(::Val{:*}, f, g) = Expr(:call, :*, f, g)
-cderivate(::Val{:*}, f, n::Number) = cderivate(Val(:*),n,f)
-cderivate(::Val{:*}, n::Number, f) = iszero(n) ? :() : Expr(:call, :*, n, f)
-cderivate(::Val{:*}, n1::Number, n2::Number) = n1 * n2
-
-cderivate(::Val{:^}, f, g) = Expr(:call, :+, f, g)
-cderivate(::Val{:^}, f, n::Number) = iszero(n) ? 1 : (isone(n) ? f : Expr(:call, :^, f, n))
-cderivate(::Val{:^}, n1::Number, n2::Number) = n1 ^ n2
 
 function clean_derivative(ex::Expr)
-    ch = get_children(ex)
+    ch = ex.args
     cderivate(Val(ch[1]), ch[2], ch[3])
 end
 
+cderivate(::Val{:+}, f, g) = Expr(:call, :+, f, g)
+cderivate(::Val{:+}, f, n::Number) = iszero(n) ? f : Expr(:call, :+, f, n)
+cderivate(::Val{:+}, n::Number, f) = cderivate(Val(:+), f, n)
+cderivate(::Val{:+}, n1::Number, n2::Number) = n1 + n2
+cderivate(::Val{:-}, f, g) = Expr(:call, :-, f, g)
+cderivate(::Val{:-}, f, n::Number) = iszero(n) ? f : Expr(:call, :-, f, n)
+cderivate(::Val{:-}, n::Number, f) = Expr(:call, :-, f, n)
+cderivate(::Val{:-}, n1::Number, n2::Number) = n1 - n2
+cderivate(::Val{:*}, f, g) = Expr(:call, :*, f, g)
+cderivate(::Val{:*}, f, n::Number) = iszero(n) ? 0 : Expr(:call, :*, n, f)
+cderivate(::Val{:*}, n::Number, f) = cderivate(Val(:*), f, n)
+cderivate(::Val{:*}, n1::Number, n2::Number) = n1 * n2
+cderivate(::Val{:^}, f, n::Number) = iszero(n) ? 1 : (isone(n) ? f : Expr(:call, :^, f, n))
+cderivate(::Val{:^}, n1::Number, n2::Number) = n1 ^ n2
+
 function derivative(ex::Expr)
-    ch = get_children(ex)
-
-    if !is_leave(ch)
+    ch = ex.args
+    if !is_leave(ex)
         der = derivate(Val(ch[1]), ch[2], ch[3])
-
         return der
     end
-
     return :()
 end
 
-## Precompiling stuffs
+substitute(n::Number, _) = n
+substitute(s::Symbol, sub::Pair{Symbol,<:Number}) = s == sub.first ? sub.second : s
+function substitute(ex::Expr, sub)
+    Expr(ex.head, [substitute(arg, sub) for arg in ex.args]...)
+end
+
+eval_func(ex::Expr, v::Number) = substitute(ex, :x => v) |> eval
+
 precompile(derivate, (Val{:+}, Expr, Number))
 precompile(derivate, (Val{:+}, Number, Expr))
 precompile(derivate, (Val{:+}, Expr, Expr))
@@ -287,14 +215,3 @@ precompile(derivate, (Val{:*}, Expr, Expr))
 precompile(derivate, (Val{:^}, Expr, Number))
 precompile(derivate, (Val{:^}, Symbol, Number))
 precompile(derivate, (Val{:^}, Expr, Expr))
-
-
-eval_func(ex::Expr,v::Number) = begin
-    substitute(ex, :x => v) |> eval
-end
-
-substitute(n::Number, _) = n
-substitute(s::Symbol, sub::Pair{Symbol,<:Number}) = s == sub.first ? sub.second : s
-function substitute(ex::Expr, sub)
-    Expr(ex.head, [substitute(arg, sub) for arg in ex.args]...)
-end
