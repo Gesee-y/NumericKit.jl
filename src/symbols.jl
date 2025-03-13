@@ -12,6 +12,15 @@ end
 
 NSyntaxTree(n::NSyntaxNode) = NSyntaxTree{typeof(n)}(n)
 
+struct ConstNode{T <: Nunber}
+    n::T
+end
+ConstNode(n::NodeType) = ConstNode{typeof(n)}(n)
+
+struct SymbNode
+    n::Symbol
+end
+
 struct AddNode{T <: NodeType, N <: NodeType}
     n1::T
     n2::N
@@ -35,20 +44,63 @@ AddNode(n1::NodeType, n2::NodeType) = AddNode{typeof(n1), typeof(n2)}(n1,n2)
 struct SubNode{T <: NodeType, N <: NodeType}
     n1::T
     n2::N
+
+    ## Constructor
+
+    function SubNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+        if n1 isa ConstNode && n2 isa ConstNode
+            v = n1[1] - n2[2]
+            return ConstNode{type of(v)}(v)
+        end
+
+        iszero(n1) && return negate(n2)
+        iszero(n2) && return n1
+
+        return new{T, N}(n1, n2)
+    end
 end
 SubNode(n1::NodeType, n2::NodeType) = SubNode{typeof(n1), typeof(n2)}(n1,n2)
 
 struct ProdNode{T <: NodeType, N <: NodeType}
     n1::T
     n2::N
+
+    ## Constructor
+
+    function ProdNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+        if n1 isa ConstNode && n2 isa ConstNode
+            v = n1[1] * n2[2]
+            return ConstNode{type of(v)}(v)
+        end
+
+        (iszero(n1) || iszero(n2)) && return ConstNode{Int}(0)
+
+        return new{T, N}(n1, n2)
+    end
 end
 ProdNode(n1::NodeType, n2::NodeType) = ProdNode{typeof(n1), typeof(n2)}(n1,n2)
 
 struct PowNode{T <: NodeType, N <: NodeType}
     n1::T
     n2::N
+
+    ## Constructor
+
+    function PowNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+        if n1 isa ConstNode && n2 isa ConstNode
+            v = n1[1] ^ n2[2]
+            return ConstNode{type of(v)}(v)
+        end
+
+        iszero(n1) && return ConstNode{Int}(0)
+        iszero(n2) && return ConstNode{Int}(1)
+
+        return new{T, N}(n1, n2)
+    end
 end
 PowNode(n1::NodeType, n2::NodeType) = PowNode{typeof(n1), typeof(n2)}(n1,n2)
+
+####### Operations 
 
 get_children(A::AbstractArray) = A
 get_children(e::Expr) = e.args
@@ -58,6 +110,8 @@ is_leave(n) = isempty(get_children(n))
 
 const SymType = Union{Symbol,Expr, Number}
 ### Managing Symbols
+
+negate(n::NSyntaxNode) = n
 
 derivate(n::Number) = 0
 
