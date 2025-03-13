@@ -12,7 +12,7 @@ end
 
 NSyntaxTree(n::NSyntaxNode) = NSyntaxTree{typeof(n)}(n)
 
-struct ConstNode{T <: Nunber}
+struct ConstNode{T <: Number}
     n::T
 end
 ConstNode(n::NodeType) = ConstNode{typeof(n)}(n)
@@ -114,12 +114,15 @@ const SymType = Union{Symbol,Expr, Number}
 negate(n::NSyntaxNode) = n
 
 derivate(n::Number) = 0
+derivate(n::ConstNode) = 0
 
 ## Addition rule
 derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
+derivate(n::AddNode) = AddNode(derivate(n[1]), derivate(n[2]))
 
 ## Substraction rule
 derivate(::Val{:-}, f::SymType, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
+derivate(n::SubNode) = SubNode(derivate(n[1]), derivate(n[2]))
 
 ## Chain rule
 derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
@@ -145,6 +148,7 @@ derivate(::Val{:*}, n::Number, f::SymType) = begin
     return Expr(:call, :*, n, nf)
 
 end
+derivate(n::ProdNode) = AddNode(ProdNode(derivate(n[1]), n[2]), ProdNode(n[1], derivate(n[2]))
 
 ## Power rule
 derivate(::Val{:^}, f::SymType, n::Number) = begin
