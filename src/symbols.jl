@@ -21,13 +21,13 @@ struct SymbNode
     n::Symbol
 end
 
-struct AddNode{T <: NodeType, N <: NodeType}
+struct AddNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
 
     ## Constructor
 
-    function AddNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+    function AddNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
         if n1 isa ConstNode && n2 isa ConstNode
             v = n1[1] + n2[2]
             return ConstNode{type of(v)}(v)
@@ -38,16 +38,23 @@ struct AddNode{T <: NodeType, N <: NodeType}
 
         return new{T, N}(n1, n2)
     end
-end
-AddNode(n1::NodeType, n2::NodeType) = AddNode{typeof(n1), typeof(n2)}(n1,n2)
 
-struct SubNode{T <: NodeType, N <: NodeType}
+    AddNode(n1::NSyntaxNode, n2::NSyntaxNode) = AddNode{typeof(n1), typeof(n2)}(n1, n2)
+end
+AddNode(n1::NodeType, n2::NodeType) = begin
+    v1 = _make_node(n1)
+    v2 = _make_node(n2)
+    AddNode{typeof(v1), typeof(v2)}(v1,v2)
+end
+
+
+struct SubNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
 
     ## Constructor
 
-    function SubNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+    function SubNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
         if n1 isa ConstNode && n2 isa ConstNode
             v = n1[1] - n2[2]
             return ConstNode{type of(v)}(v)
@@ -58,16 +65,23 @@ struct SubNode{T <: NodeType, N <: NodeType}
 
         return new{T, N}(n1, n2)
     end
-end
-SubNode(n1::NodeType, n2::NodeType) = SubNode{typeof(n1), typeof(n2)}(n1,n2)
 
-struct ProdNode{T <: NodeType, N <: NodeType}
+    SubNode(n1::NSyntaxNode, n2::NSyntaxNode) = SubNode{typeof(n1), typeof(n2)}(n1, n2)
+end
+SubNode(n1::NodeType, n2::NodeType) = begin
+    v1 = _make_node(n1)
+    v2 = _make_node(n2)
+    SubNode{typeof(v1), typeof(v2)}(v1,v2)
+end
+
+
+struct ProdNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
 
     ## Constructor
 
-    function ProdNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+    function ProdNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
         if n1 isa ConstNode && n2 isa ConstNode
             v = n1[1] * n2[2]
             return ConstNode{type of(v)}(v)
@@ -80,16 +94,23 @@ struct ProdNode{T <: NodeType, N <: NodeType}
 
         return new{T, N}(n1, n2)
     end
-end
-ProdNode(n1::NodeType, n2::NodeType) = ProdNode{typeof(n1), typeof(n2)}(n1,n2)
 
-struct PowNode{T <: NodeType, N <: NodeType}
+    ProdNode(n1::NSyntaxNode, n2::NSyntaxNode) = ProdNode{typeof(n1), typeof(n2)}(n1, n2)
+end
+ProdNode(n1::NodeType, n2::NodeType) = begin
+    v1 = _make_node(n1)
+    v2 = _make_node(n2)
+    ProdNode{typeof(v1), typeof(v2)}(v1,v2)
+end
+)
+
+struct PowNode{T <: NSyntaxNode, N <: NSyntaxNode}
     n1::T
     n2::N
 
     ## Constructor
 
-    function PowNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+    function PowNode{T, N}(n1::T, n2::N where{T <: NSyntaxNode, N <: NSyntaxNode}
         if n1 isa ConstNode && n2 isa ConstNode
             v = n1[1] ^ n2[2]
             return ConstNode{type of(v)}(v)
@@ -100,8 +121,14 @@ struct PowNode{T <: NodeType, N <: NodeType}
 
         return new{T, N}(n1, n2)
     end
+
+    PowNode(n1::NSyntaxNode, n2::NSyntaxNode) = PowNode{typeof(n1), typeof(n2)}(n1, n2)
 end
-PowNode(n1::NodeType, n2::NodeType) = PowNode{typeof(n1), typeof(n2)}(n1,n2)
+PowNode(n1::NodeType, n2::NodeType) = begin
+    v1 = _make_node(n1)
+    v2 = _make_node(n2)
+    PowNode{typeof(v1), typeof(v2)}(v1,v2)
+end
 
 ####### Operations 
 
@@ -193,6 +220,23 @@ toexpr(n::ConstNode) = n[1]
 toexpr(n::SymbNode) = n[1]
 toexpr(n::NSyntaxNode) = Expr(:call, getop(n), toexpr(n[1]), toexpr(n[2]))
 
+totree(ex::Expr) = NSyntaxTree(_make_node(ex))
+
+_make_node(n::Number) = ConstNode(n)
+_make_node(s::Symbol) = SymbNode(s)
+_make_node(::Val{:+}, n1::NodeType, n2::NodeType) = AddNode(n1, n2)
+_make_node(::Val{:-}, n1::NodeType, n2::NodeType) = SubNode(n1, n2)
+_make_node(::Val{:*}, n1::NodeType, n2::NodeType) = ProdNode(n1, n2)
+_make_node(::Val{:^}, n1::NodeType, n2::NodeType) = PowNode(n1, n2)
+_make_node(ex::Expr) = begin
+    ch = ex.args
+    
+    if length(ex) == 2
+        _make_node(Val(ch[1]), ch[2])
+    elseif length(ex) == 3
+        _make_node(Val(ch[1]), ch[2], ch[3])
+    end
+end
 ### Cleaning 
 cderivate(::Val{:+}, f, g) = Expr(:call, :+, f, g)
 cderivate(::Val{:+}, f, n::Number) = iszero(n) ? f : Expr(:call, :+, f, n)
