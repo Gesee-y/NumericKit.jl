@@ -12,21 +12,36 @@ const SymType = Union{Symbol,Expr, Number}
 ### Managing Symbols
 
 derivate(n::Number) = 0
+
+## Addition rule
 derivate(::Val{:+}, f::SymType, g::SymType,) = Expr(:call, :+, derivate(f), derivate(g))
+
+## Substraction rule
 derivate(::Val{:-}, f::SymType,
 , g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
+
+## Chain rule
 derivate(::Val{:*}, f::SymType, g::SymType) = Expr(:call, :+, Expr(:call, :*,derivate(f),g), Expr(:call, :*,derivate(g),f))
 derivate(::Val{:*}, f::SymType, n::Number) = derivate(Val(:*), f, n)
+derivate(::Val{:*}, n1::Number, n2:: Number) = 0
 derivate(::Val{:*}, n::Number, f::SymType) = begin
     if n==0
         return 0
     elseif n==1
         return derivate(f)
     end
+    nf = derivate(f)
+    
+    if nf.args[1] == :*
+        nf.args[2] *= n
+        return nf
+    end
 
-    return Expr(:call, :*, n, derivate(f))
+    return Expr(:call, :*, n, nf)
     
 end
+
+## Power rule
 derivate(::Val{:^}, f::SymType, n::Number) = begin
     if iszero(n-1)
         return Expr(:call, :*, n, derivate(f))
@@ -36,9 +51,12 @@ derivate(::Val{:^}, f::SymType, n::Number) = begin
 
     return Expr(:call, :*, n, Expr(:call, :^, f::SymType, n-1), derivate(f))
 end
+
+## Others 
 derivate(ex::Expr) = derivative(ex)
 derivate(s::Symbol) = 1
 
+### Cleaning 
 cderivate(::Val{:+}, f, g) = Expr(:call, :+, f, g)
 cderivate(::Val{:+}, f, n::Number) = iszero(n) ? f : Expr(:call, :+, f, n)
 cderivate(::Val{:+}, n::Number, f) = cderivate(Val(:+),f,n)
@@ -69,7 +87,7 @@ function derivative(ex::Expr)
     if !is_leave(ch)
         der = derivate(Val(ch[1]), ch[2], ch[3])
 
-        return clean_derivative(der)
+        return der
     end
     
     return :()
