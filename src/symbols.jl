@@ -2,6 +2,54 @@
 
 #### First, we make a basic tree system 
 
+abstract type NSyntaxNode
+
+const NodeType = Union{Number, NSyntaxNode, Symbol}
+
+struct NSyntaxTree{T <: NSyntaxNode}
+    root::T
+end
+
+NSyntaxTree(n::NSyntaxNode) = NSyntaxTree{typeof(n)}(n)
+
+struct AddNode{T <: NodeType, N <: NodeType}
+    n1::T
+    n2::N
+
+    ## Constructor
+
+    function AddNode{T, N}(n1::T, n2::N where{T <: NodeType, N <: NodeType}
+        if n1 isa ConstNode && n2 isa ConstNode
+            v = n1[1] + n2[2]
+            return ConstNode{type of(v)}(v)
+        end
+        
+        iszero(n1) && return n2
+        iszero(n2) && return n1
+
+        return new{T, N}(n1, n2)
+    end
+end
+AddNode(n1::NodeType, n2::NodeType) = AddNode{typeof(n1), typeof(n2)}(n1,n2)
+
+struct SubNode{T <: NodeType, N <: NodeType}
+    n1::T
+    n2::N
+end
+SubNode(n1::NodeType, n2::NodeType) = SubNode{typeof(n1), typeof(n2)}(n1,n2)
+
+struct ProdNode{T <: NodeType, N <: NodeType}
+    n1::T
+    n2::N
+end
+ProdNode(n1::NodeType, n2::NodeType) = ProdNode{typeof(n1), typeof(n2)}(n1,n2)
+
+struct PowNode{T <: NodeType, N <: NodeType}
+    n1::T
+    n2::N
+end
+PowNode(n1::NodeType, n2::NodeType) = PowNode{typeof(n1), typeof(n2)}(n1,n2)
+
 get_children(A::AbstractArray) = A
 get_children(e::Expr) = e.args
 get_children(n) = ()
