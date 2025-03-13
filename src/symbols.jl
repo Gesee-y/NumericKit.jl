@@ -105,6 +105,17 @@ PowNode(n1::NodeType, n2::NodeType) = PowNode{typeof(n1), typeof(n2)}(n1,n2)
 
 ####### Operations 
 
+Base.getindex(n::NSyntaxNode, I::Integer) = begin
+    fields = fieldsname(n)
+    return getfield(n, fields[i])
+end
+
+iszero(n::NSyntaxNode) = false
+iszero(n::ConstNode) = iszero(n[1])
+
+isone(n::NSyntaxNode) = false
+isone(n::ConstNode) = isone(n[1])
+
 get_children(A::AbstractArray) = A
 get_children(e::Expr) = e.args
 get_children(n) = ()
@@ -164,6 +175,7 @@ derivate(::Val{:^}, f::SymType, n::Number) = begin
 
     return Expr(:call, :*, n, Expr(:call, :^, f::SymType, n-1), derivate(f))
 end
+derivate(n::PowNode) = ProdNode(ProdNode(n[2], n[1]), derivate(n[1]))
 
 ## Others 
 derivate(ex::Expr) = derivative(ex)
