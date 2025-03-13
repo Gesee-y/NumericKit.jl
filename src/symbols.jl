@@ -127,7 +127,7 @@ derivate(n::SymbNode) = 1
 derivate(n::AddNode) = AddNode(derivate(n.n1), derivate(n.n2))
 derivate(n::SubNode) = SubNode(derivate(n.n1), derivate(n.n2))
 derivate(n::ProdNode) = AddNode(ProdNode(derivate(n.n1), n.n2), ProdNode(n.n1, derivate(n.n2)))
-derivate(n::PowNode) = ProdNode(ProdNode(n.n2, PowNode(n.n1, SubNode(n.n2, ConstNode(1))), derivate(n.n1))
+derivate(n::PowNode) = ProdNode(ProdNode(n.n2, n.n1, derivate(n.n1)))
 
 derivate(::Val{:+}, f::SymType, g::SymType) = Expr(:call, :+, derivate(f), derivate(g))
 derivate(::Val{:-}, f::SymType, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
