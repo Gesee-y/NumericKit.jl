@@ -18,15 +18,18 @@ mutable struct SymbolicSpace{T <: Any} <: AbstractCodeSpace
 
     ## Constructor 
 
-    SymbolicSpace{T}() where T<: Any = new{T}(NSyntaxTree(), Dict{Symbol, T}())
+    SymbolicSpace{T}() where T<: Any = new{T}(NSyntaxTree(ConstNode(0)), Dict{Symbol, T}())
     SymbolicSpace{T}(ex::Expr) where T<: Any = new{T}(totree(ex), Dict{Symbol, T}())
     
 end
 
+## Better use immutable struct for this. type parameters reduce the need for the compiler to infer fields type 
+
+
 struct ConstNode{T <: Number}
     n::T
 end
-ConstNode(n::NodeType) = ConstNode{typeof(n)}(n)
+ConstNode(n::Number) = ConstNode{typeof(n)}(n)
 
 struct SymbNode
     n::Symbol
@@ -110,18 +113,21 @@ PowNode(n1::NodeType, n2::NodeType) = PowNode(_make_node(n1), _make_node(n2))
 
 ### Spaces function 
 
-setvar(space::SymbolicSpace{T}, s::Symbol, val) = (space.var[s] = convert(T, init))
+setvar(space::SymbolicSpace{T}, s::Symbol, val) = (space.var[s] = convert(T, val))
 
-####### Operations 
+####### Operations
 
+## since I will likely modify the field's names, it's safer for this case to rely on their order
 Base.getindex(n::NSyntaxNode, I::Integer) = begin
     fields = fieldnames(typeof(n))
     getfield(n, fields[I])
 end
 
+# ToDo : Fix this for node evaluating to zero
 iszero(n::NSyntaxNode) = false
 iszero(n::ConstNode) = iszero(n.n)
 
+# TODO : Fix this for node evaluating to one
 isone(n::NSyntaxNode) = false
 isone(n::ConstNode) = isone(n.n)
 
@@ -155,6 +161,7 @@ derivate(ex::Expr) = derivative(ex)
 derivate(s::Symbol) = 1
 derivate(tree::NSyntaxTree) = NSyntaxTree(derivate(tree.root))
 
+## TODO : Add more operator when the code base will be ready
 getop(::AddNode) = :+
 getop(::SubNode) = :-
 getop(::ProdNode) = :*
