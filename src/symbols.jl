@@ -2,6 +2,7 @@
 
 #### First, we make a basic tree system 
 
+abstract type AbstractCodeSpace end
 abstract type NSyntaxNode end
 
 const NodeType = Union{Number, NSyntaxNode, Symbol}
@@ -9,8 +10,18 @@ const NodeType = Union{Number, NSyntaxNode, Symbol}
 struct NSyntaxTree{T <: NSyntaxNode}
     root::T
 end
-
 NSyntaxTree(n::NSyntaxNode) = NSyntaxTree{typeof(n)}(n)
+
+mutable struct SymbolicSpace{T <: Any} <: AbstractCodeSpace 
+    code::NSyntaxTree
+    const var::Dict{Symbol, T}
+
+    ## Constructor 
+
+    SymbolicSpace{T}() = new{T}()
+    SymbolicSpace{T}(ex::Expr) = new{T}(totree(ex), Dict{Symbol, Any}())
+    
+end
 
 struct ConstNode{T <: Number}
     n::T
@@ -96,6 +107,10 @@ function PowNode(n1::NSyntaxNode, n2::NSyntaxNode)
     end
 end
 PowNode(n1::NodeType, n2::NodeType) = PowNode(_make_node(n1), _make_node(n2))
+
+### Spaces function 
+
+setvar(space::SymbolicSpace{T}, s::Symbol, val) = (space.var[s] = convert(T, init))
 
 ####### Operations 
 
@@ -194,6 +209,18 @@ function derivative(ex::Expr)
     end
     return :()
 end
+
+### Evaluate code
+
+Base.eval(sp::SymbolicSpace) = eval(sp.code, sp.var)
+Base.eval(tr::NSyntaxTree, var::Dict) = eval(tr.root, var)
+Base eval(n::AddNode) = eval(n[1]) + eval(n[2])
+Base eval(n::SubNode) = eval(n[1]) - eval(n[2])
+Base eval(n::ProdNode) = eval(n[1]) * eval(n[2])
+Base.eval(n::PowNode) = eval(n[1]) ^ eval(n[2])
+Base.eval(n::ConstNode, var::Dict) = n[1]
+Base.eval(s::SymbNode, var::Dict) = var[s[1]]
+
 
 substitute(n::Number, _) = n
 substitute(s::Symbol, sub::Pair{Symbol,<:Number}) = s == sub.first ? sub.second : s
