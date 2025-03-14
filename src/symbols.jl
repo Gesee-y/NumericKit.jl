@@ -18,8 +18,8 @@ mutable struct SymbolicSpace{T <: Any} <: AbstractCodeSpace
 
     ## Constructor 
 
-    SymbolicSpace{T}() = new{T}()
-    SymbolicSpace{T}(ex::Expr) = new{T}(totree(ex), Dict{Symbol, Any}())
+    SymbolicSpace{T}() where T<: Any = new{T}()
+    SymbolicSpace{T}(ex::Expr) where T<: Any = new{T}(totree(ex), Dict{Symbol, T}())
     
 end
 
@@ -142,7 +142,7 @@ derivate(n::SymbNode) = 1
 derivate(n::AddNode) = AddNode(derivate(n.n1), derivate(n.n2))
 derivate(n::SubNode) = SubNode(derivate(n.n1), derivate(n.n2))
 derivate(n::ProdNode) = AddNode(ProdNode(derivate(n.n1), n.n2), ProdNode(n.n1, derivate(n.n2)))
-derivate(n::PowNode) = ProdNode(ProdNode(n.n2, n.n1), derivate(n.n1))
+derivate(n::PowNode) = ProdNode(ProdNode(n.n2, derivate(n.n2)), PowNode(n.n1, ConstNode(n.n2[1] - 1)))
 
 derivate(::Val{:+}, f::SymType, g::SymType) = Expr(:call, :+, derivate(f), derivate(g))
 derivate(::Val{:-}, f::SymType, g::SymType) = Expr(:call, :-, derivate(f), derivate(g))
@@ -214,10 +214,10 @@ end
 
 Base.eval(sp::SymbolicSpace) = eval(sp.code, sp.var)
 Base.eval(tr::NSyntaxTree, var::Dict) = eval(tr.root, var)
-Base eval(n::AddNode) = eval(n[1]) + eval(n[2])
-Base eval(n::SubNode) = eval(n[1]) - eval(n[2])
-Base eval(n::ProdNode) = eval(n[1]) * eval(n[2])
-Base.eval(n::PowNode) = eval(n[1]) ^ eval(n[2])
+Base eval(n::AddNode, var::Dict) = eval(n[1], var) + eval(n[2], var)
+Base eval(n::SubNode, var::Dict) = eval(n[1], var) - eval(n[2], var)
+Base eval(n::ProdNode, var::Dict) = eval(n[1], var) * eval(n[2], var)
+Base.eval(n::PowNode, var::Dict) = eval(n[1], var) ^ eval(n[2], var)
 Base.eval(n::ConstNode, var::Dict) = n[1]
 Base.eval(s::SymbNode, var::Dict) = var[s[1]]
 
